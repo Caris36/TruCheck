@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f2">
+  <title>TruCheck | Attendance, handled</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #192824;
+      --muted: #78827d;
+      --line: #e5e9e4;
+      --paper: #ffffff;
+      --canvas: #f5f6f2;
+      --forest: #193f35;
+      --forest-2: #2b594b;
+      --mint: #e7f1eb;
+      --lime: #d8ee85;
+      --amber: #a96b22;
+      --amber-bg: #fff2dc;
+      --red: #a74b43;
+      --red-bg: #fbe9e7;
+      --blue: #476f93;
+      --blue-bg: #eaf1f7;
+      --shadow: 0 12px 32px rgb(27 44 35 / 5%);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    .app-shell { min-height: 100vh; }
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 42px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 205px; }
+    .brand-mark {
+      width: 34px; height: 34px; display: grid; place-items: center;
+      color: var(--lime); background: var(--forest); border-radius: 10px;
+    }
+    .brand-mark svg { width: 20px; height: 20px; }
+    .brand-name { font-size: 19px; font-weight: 750; letter-spacing: -.6px; }
+    .brand-name span { color: #82918a; font-weight: 500; }
+    .tagline { margin-left: 15px; color: var(--muted); font-size: 12px; }
+    .topbar-right { display: flex; align-items: center; gap: 22px; }
+    .today { display: flex; align-items: center; gap: 8px; color: #53615b; font-size: 12px; }
+    .today svg { width: 16px; height: 16px; color: #7c8982; }
+    .avatar {
+      display: grid; place-items: center; width: 34px; height: 34px;
+      border-radius: 50%; background: #e8ded0; color: #72563c;
+      font-size: 11px; font-weight: 700;
+    }
+    .workspace { max-width: 1440px; margin: 0 auto; padding: 35px 42px 64px; }
+    .heading-row { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 27px; }
+    .eyebrow { margin: 0 0 8px; color: var(--forest-2); font-size: 10px; font-weight: 750; letter-spacing: 1.1px; text-transform: uppercase; }
+    h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(29px, 3vw, 37px); line-height: 1.08; font-weight: 500; letter-spacing: -.8px; }
+    .subheading { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .button {
+      display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+      min-height: 39px; padding: 0 14px; border: 1px solid var(--line); border-radius: 6px;
+      background: var(--paper); cursor: pointer; font-size: 12px; font-weight: 650;
+      transition: background .16s ease, border-color .16s ease, transform .16s ease;
+    }
+    .button:hover { border-color: #bbc8bf; background: #fbfcfa; }
+    .button:active { transform: translateY(1px); }
+    .button svg { width: 15px; height: 15px; }
+    .button-primary { background: var(--forest); color: #fff; border-color: var(--forest); }
+    .button-primary:hover { background: #244d41; border-color: #244d41; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 23px; }
+    .metric {
+      min-height: 105px; padding: 17px 19px; background: var(--paper);
+      border: 1px solid var(--line); border-radius: 7px;
+    }
+    .metric-label { display: flex; align-items: center; justify-content: space-between; color: #65716b; font-size: 11px; font-weight: 600; }
+    .metric-label svg { width: 16px; height: 16px; color: #849189; }
+    .metric-bottom { display: flex; align-items: baseline; gap: 9px; margin-top: 12px; }
+    .metric-value { font-family: Georgia, "Times New Roman", serif; font-size: 31px; line-height: 1; }
+    .metric-note { color: var(--muted); font-size: 10px; }
+    .metric-note.positive { color: #438167; }
+    .metric-note.attention { color: var(--amber); }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 17px; align-items: start; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 19px 20px 16px; }
+    .panel-title { margin: 0; font-size: 14px; font-weight: 700; }
+    .panel-caption { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .count-pill { padding: 4px 8px; border-radius: 20px; background: var(--amber-bg); color: var(--amber); font-size: 10px; font-weight: 700; }
+    .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 0 20px 14px; }
+    .filters { display: flex; align-items: center; gap: 5px; }
+    .filter-button { padding: 7px 10px; border: 0; border-radius: 5px; color: #77827c; background: transparent; cursor: pointer; font-size: 10px; font-weight: 650; }
+    .filter-button[aria-pressed="true"] { color: var(--forest); background: var(--mint); }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 10px; top: 9px; width: 14px; height: 14px; color: #8b9690; }
+    .search { width: 175px; height: 32px; padding: 0 10px 0 31px; outline: 0; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); font-size: 10px; }
+    .search:focus { border-color: #8ba99a; box-shadow: 0 0 0 3px rgb(43 89 75 / 8%); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 10px 15px; color: #8a948e; background: #fafbf9; border-top: 1px solid #edf0ec; border-bottom: 1px solid #edf0ec; font-size: 9px; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; white-space: nowrap; }
+    th:first-child, td:first-child { padding-left: 20px; }
+    th:last-child, td:last-child { padding-right: 20px; }
+    td { padding: 13px 15px; border-bottom: 1px solid #eff1ee; color: #55615b; font-size: 11px; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .person { display: flex; align-items: center; gap: 9px; }
+    .person-avatar { width: 29px; height: 29px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; font-size: 9px; font-weight: 750; }
+    .person-name { color: var(--ink); font-size: 11px; font-weight: 650; }
+    .person-team { margin-top: 3px; color: #89928d; font-size: 9px; }
+    .issue-label { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border-radius: 4px; font-size: 9px; font-weight: 650; }
+    .issue-label::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .issue-missed { background: var(--amber-bg); color: var(--amber); }
+    .issue-duplicate { background: var(--red-bg); color: var(--red); }
+    .issue-gap { background: var(--blue-bg); color: var(--blue); }
+    .issue-clock { background: #f2ebf7; color: #785a8d; }
+    .row-action { padding: 5px 8px; background: transparent; border: 1px solid transparent; border-radius: 4px; color: var(--forest-2); cursor: pointer; font-size: 10px; font-weight: 700; }
+    .row-action:hover { background: var(--mint); }
+    .empty-state { padding: 38px 20px; text-align: center; color: var(--muted); font-size: 12px; }
+    .side-column { display: grid; gap: 14px; }
+    .status-panel { padding: 18px; }
+    .side-title { margin: 0; font-size: 12px; font-weight: 700; }
+    .live-indicator { display: inline-flex; align-items: center; gap: 6px; color: #438167; font-size: 9px; font-weight: 700; }
+    .live-indicator::before { content: ""; width: 6px; height: 6px; background: #4ba276; border-radius: 50%; box-shadow: 0 0 0 3px #e8f4eb; }
+    .scan-total { display: flex; align-items: baseline; gap: 7px; margin: 21px 0 5px; }
+    .scan-total strong { font-family: Georgia, "Times New Roman", serif; font-size: 35px; font-weight: 500; }
+    .scan-total span { color: var(--muted); font-size: 10px; }
+    .scan-bar { display: flex; height: 6px; overflow: hidden; gap: 3px; margin: 13px 0 14px; border-radius: 5px; }
+    .scan-bar span:nth-child(1) { width: 72%; background: #83b394; }
+    .scan-bar span:nth-child(2) { width: 17%; background: #d8c77a; }
+    .scan-bar span:nth-child(3) { flex: 1; background: #e7eae6; }
+    .scan-breakdown { display: grid; gap: 10px; }
+    .scan-line { display: flex; justify-content: space-between; align-items: center; color: #69756e; font-size: 10px; }
+    .scan-line strong { color: #3b4842; font-weight: 650; }
+    .scan-dot { display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: #83b394; }
+    .scan-line:nth-child(2) .scan-dot { background: #d8c77a; }
+    .scan-line:nth-child(3) .scan-dot { background: #cbd2cd; }
+    .history-panel { padding: 18px; }
+    .history-list { display: grid; gap: 15px; margin-top: 17px; }
+    .history-item { display: grid; grid-template-columns: 25px 1fr; gap: 9px; }
+    .history-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--mint); color: var(--forest-2); }
+    .history-icon svg { width: 12px; height: 12px; }
+    .history-copy { color: #66726b; font-size: 10px; line-height: 1.5; }
+    .history-copy strong { color: #34423b; font-weight: 650; }
+    .history-time { margin-top: 3px; color: #9aa29d; font-size: 9px; }
+    .view-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 16px; padding: 0; border: 0; color: var(--forest-2); background: none; cursor: pointer; font-size: 10px; font-weight: 700; }
+    .view-link svg { width: 13px; height: 13px; }
+    .footer-note { display: flex; align-items: center; gap: 7px; margin-top: 19px; color: #87928b; font-size: 10px; }
+    .footer-note svg { width: 14px; height: 14px; color: #73917f; }
+    .toast { position: fixed; right: 22px; bottom: 22px; z-index: 5; max-width: min(360px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 6px; background: var(--forest); color: #fff; box-shadow: var(--shadow); font-size: 12px; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    dialog { width: min(440px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 24px 80px rgb(20 35 28 / 20%); color: var(--ink); }
+    dialog::backdrop { background: rgb(22 35 29 / 35%); backdrop-filter: blur(2px); }
+    .dialog-head { display: flex; justify-content: space-between; align-items: start; padding: 21px 22px 15px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 23px; font-weight: 500; }
+    .dialog-head p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .icon-button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 5px; color: #78847d; background: transparent; cursor: pointer; }
+    .icon-button:hover { background: var(--canvas); }
+    .icon-button svg { width: 16px; height: 16px; }
+    .dialog-body { padding: 18px 22px; }
+    .review-summary { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #fbfcfa; }
+    .review-summary .person { margin-bottom: 11px; }
+    .summary-line { display: flex; justify-content: space-between; gap: 15px; padding-top: 9px; border-top: 1px solid #edf0ec; color: #7a857f; font-size: 10px; }
+    .summary-line + .summary-line { margin-top: 8px; }
+    .summary-line strong { color: #334139; text-align: right; font-weight: 650; }
+    .field-label { display: block; margin: 17px 0 7px; color: #435048; font-size: 10px; font-weight: 700; }
+    .reason-input { width: 100%; min-height: 78px; resize: vertical; padding: 10px 11px; border: 1px solid var(--line); border-radius: 5px; outline: 0; color: var(--ink); font-size: 11px; }
+    .reason-input:focus { border-color: #8ba99a; box-shadow: 0 0 0 3px rgb(43 89 75 / 8%); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px 20px; }
+    .dialog-actions .button { min-height: 36px; font-size: 11px; }
+    .button-danger { color: var(--red); border-color: #efd7d4; }
+    .button-danger:hover { background: #fff8f7; border-color: #e3b9b4; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 1050px) {
+      .topbar { padding: 0 25px; }
+      .workspace { padding: 30px 25px 50px; }
+      .content-grid { grid-template-columns: minmax(0, 1fr) 260px; gap: 12px; }
+      td, th { padding-left: 10px; padding-right: 10px; }
+      th:first-child, td:first-child { padding-left: 14px; }
+      th:last-child, td:last-child { padding-right: 14px; }
+    }
+    @media (max-width: 800px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .side-column { grid-template-columns: repeat(2, 1fr); }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .tagline { display: none; }
+    }
+    @media (max-width: 560px) {
+      .topbar { height: 62px; padding: 0 16px; }
+      .brand { min-width: 0; }
+      .topbar-right { gap: 12px; }
+      .today { font-size: 0; gap: 0; }
+      .today svg { width: 18px; height: 18px; }
+      .workspace { padding: 25px 15px 40px; }
+      .heading-row { align-items: start; flex-direction: column; margin-bottom: 20px; }
+      .header-actions { width: 100%; }
+      .header-actions .button { flex: 1; }
+      .metric { min-height: 94px; padding: 14px; }
+      .metric-value { font-size: 28px; }
+      .metric-label { font-size: 10px; }
+      .toolbar { align-items: stretch; padding: 0 13px 12px; }
+      .filters { overflow-x: auto; }
+      .filter-button { flex: 0 0 auto; padding: 7px; }
+      .search-wrap, .search { width: 100%; }
+      .panel-heading { padding-left: 14px; padding-right: 14px; }
+      .side-column { grid-template-columns: 1fr; }
+      .table-wrap { margin-right: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="TruCheck home">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8.5 10a1 1 0 1 0 0 .01M15.5 10a1 1 0 1 0 0 .01M8.5 15c1.8 1.5 5.2 1.5 7 0"/></svg>
+        </div>
+        <div class="brand-name">TruCheck<span>.</span></div>
+        <div class="tagline">Less time fixing timesheets. More time for people.</div>
+      </div>
+      <div class="topbar-right">
+        <div class="today" id="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Tuesday, October 15</span></div>
+        <div class="avatar" title="HR administrator">AM</div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="heading-row" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Tuesday, October 15, 2024 <span aria-hidden="true">·</span> Daily overview</p>
+          <h1 id="page-title">Attendance, handled.</h1>
+          <p class="subheading">A clearer view of today’s scans, exceptions, and the people behind them.</p>
+        </div>
+        <div class="header-actions">
+          <button class="button" id="historyButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Change history</button>
+          <button class="button button-primary" id="exportButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 17v3h14v-3"/></svg>Export report</button>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Attendance summary">
+        <article class="metric"><div class="metric-label">People expected <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6"/></svg></div><div class="metric-bottom"><span class="metric-value">128</span><span class="metric-note">across 4 locations</span></div></article>
+        <article class="metric"><div class="metric-label">Checked in <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/><circle cx="12" cy="12" r="10"/></svg></div><div class="metric-bottom"><span class="metric-value">116</span><span class="metric-note positive">90.6% of team</span></div></article>
+        <article class="metric"><div class="metric-label">Needs a closer look <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="metric-bottom"><span class="metric-value" id="issueMetric">8</span><span class="metric-note attention">3 payroll-sensitive</span></div></article>
+        <article class="metric"><div class="metric-label">Ready for payroll <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6M7 17h3"/></svg></div><div class="metric-bottom"><span class="metric-value" id="readyMetric">120</span><span class="metric-note">of 128 records</span></div></article>
+      </section>
+
+      <div class="content-grid">
+        <section class="panel" aria-labelledby="exceptions-title">
+          <div class="panel-heading">
+            <div><h2 class="panel-title" id="exceptions-title">Attendance exceptions</h2><p class="panel-caption">Review and resolve before records reach payroll.</p></div>
+            <span class="count-pill" id="issueCount">8 open</span>
+          </div>
+          <div class="toolbar">
+            <div class="filters" role="group" aria-label="Filter attendance exceptions">
+              <button class="filter-button" type="button" data-filter="all" aria-pressed="true">All issues</button>
+              <button class="filter-button" type="button" data-filter="missed" aria-pressed="false">Missed scan</button>
+              <button class="filter-button" type="button" data-filter="duplicate" aria-pressed="false">Duplicate</button>
+              <button class="filter-button" type="button" data-filter="clock" aria-pressed="false">Missing clock-out</button>
+            </div>
+            <label class="search-wrap"><span class="sr-only">Search employees</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" class="search" type="search" placeholder="Find a person..."></label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Team member</th><th scope="col">Issue</th><th scope="col">Time</th><th scope="col">Location</th><th scope="col">Action</th></tr></thead>
+              <tbody id="issueRows"></tbody>
+            </table>
+            <div class="empty-state" id="emptyState" hidden>No matching attendance issues.</div>
+          </div>
+        </section>
+
+        <aside class="side-column" aria-label="Scan and correction activity">
+          <section class="panel status-panel">
+            <div class="panel-heading" style="padding:0"><h2 class="side-title">Scan monitor</h2><span class="live-indicator">LIVE</span></div>
+            <div class="scan-total"><strong>124</strong><span>scan attempts today</span></div>
+            <div class="scan-bar" aria-label="92 successful scans, 21 requiring review, 11 not yet scanned"><span></span><span></span><span></span></div>
+            <div class="scan-breakdown">
+              <div class="scan-line"><span><i class="scan-dot"></i>Verified scans</span><strong>92</strong></div>
+              <div class="scan-line"><span><i class="scan-dot"></i>Flagged for review</span><strong>21</strong></div>
+              <div class="scan-line"><span><i class="scan-dot"></i>Not yet scanned</span><strong>11</strong></div>
+            </div>
+          </section>
+          <section class="panel history-panel" id="historyPanel">
+            <h2 class="side-title">Recent changes</h2>
+            <div class="history-list" id="historyList">
+              <div class="history-item"><div class="history-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></div><div class="history-copy"><strong>Olivia Chen</strong> · corrected check-in to 8:02 AM<div class="history-time">Today, 9:14 AM · approved by Alex M.</div></div></div>
+              <div class="history-item"><div class="history-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></div><div class="history-copy"><strong>James Okafor</strong> · duplicate scan dismissed<div class="history-time">Today, 8:52 AM · approved by Alex M.</div></div></div>
+              <div class="history-item"><div class="history-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></div><div class="history-copy"><strong>Priya Singh</strong> · clock-out added at 5:16 PM<div class="history-time">Yesterday, 5:41 PM · approved by Alex M.</div></div></div>
+            </div>
+            <button class="view-link" type="button" id="viewHistory">View full history <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          </section>
+        </aside>
+      </div>
+      <div class="footer-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg>Changes are recorded with a reason and reviewer for a clear audit trail.</div>
+    </main>
+  </div>
+
+  <dialog id="reviewDialog" aria-labelledby="dialogTitle">
+    <form id="reviewForm">
+      <div class="dialog-head"><div><h2 id="dialogTitle">Review correction</h2><p>Record a decision for this attendance issue.</p></div><button class="icon-button" type="button" id="closeDialog" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg></button></div>
+      <div class="dialog-body">
+        <div class="review-summary" id="reviewSummary"></div>
+        <label class="field-label" for="reasonInput">Reason for this decision <span style="color:var(--red)">*</span></label>
+        <textarea class="reason-input" id="reasonInput" required minlength="4" placeholder="e.g. Employee confirmed the scan was missed due to a device issue."></textarea>
+      </div>
+      <div class="dialog-actions"><button class="button button-danger" type="button" id="dismissButton">Dismiss issue</button><button class="button button-primary" type="submit">Approve correction</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const issues = [
+        { id: 1, name: "Marcus Reed", initials: "MR", team: "Warehouse", color: "#e7d9ca", text: "#735a43", issue: "Missed check-in", type: "missed", time: "8:06 AM", location: "North warehouse", detail: "No successful scan recorded at start of shift." },
+        { id: 2, name: "Sofia Alvarez", initials: "SA", team: "Customer care", color: "#dce8e5", text: "#426b61", issue: "Duplicate entry", type: "duplicate", time: "8:12 AM", location: "Main office", detail: "Two check-in scans were recorded 14 seconds apart." },
+        { id: 3, name: "Ethan Brooks", initials: "EB", team: "Operations", color: "#e2e4ef", text: "#5b6486", issue: "Missing clock-out", type: "clock", time: "Yesterday, 5:30 PM", location: "East branch", detail: "No clock-out has been recorded for yesterday's shift." },
+        { id: 4, name: "Nia Thompson", initials: "NT", team: "Warehouse", color: "#f0dfda", text: "#8d5c51", issue: "Suspicious gap", type: "gap", time: "12:18 PM", location: "North warehouse", detail: "A 3h 42m gap appears between verified scans." },
+        { id: 5, name: "Leo Martin", initials: "LM", team: "Customer care", color: "#e5e9d8", text: "#68734b", issue: "Missed check-in", type: "missed", time: "9:03 AM", location: "Main office", detail: "Facial scan failed three times; check-in is unverified." },
+        { id: 6, name: "Amara Johnson", initials: "AJ", team: "Operations", color: "#e9deed", text: "#765c7b", issue: "Duplicate entry", type: "duplicate", time: "8:47 AM", location: "East branch", detail: "Two check-in entries were recorded for this shift." },
+        { id: 7, name: "Noah Kim", initials: "NK", team: "Warehouse", color: "#dce6ed", text: "#4e6d83", issue: "Missing clock-out", type: "clock", time: "Yesterday, 6:00 PM", location: "North warehouse", detail: "Clock-out is missing; this record is held from payroll." },
+        { id: 8, name: "Isabel Costa", initials: "IC", team: "Operations", color: "#f0e5d5", text: "#8a704c", issue: "Suspicious gap", type: "gap", time: "1:32 PM", location: "East branch", detail: "No scan activity for 2h 55m during an active shift." }
+      ];
+      const resolved = [];
+      const rowHost = document.getElementById("issueRows");
+      const emptyState = document.getElementById("emptyState");
+      const dialog = document.getElementById("reviewDialog");
+      const reasonInput = document.getElementById("reasonInput");
+      let selectedIssue = null;
+      let activeFilter = "all";
+      let searchTerm = "";
+      let toastTimer;
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+        })[character]);
+      }
+
+      function renderRows() {
+        const visible = issues.filter((item) => {
+          const matchesFilter = activeFilter === "all" || item.type === activeFilter;
+          const matchesSearch = `${item.name} ${item.team} ${item.location}`.toLowerCase().includes(searchTerm);
+          return matchesFilter && matchesSearch;
+        });
+        rowHost.innerHTML = visible.map((item) => `
+          <tr>
+            <td><div class="person"><span class="person-avatar" style="background:${item.color};color:${item.text}">${item.initials}</span><span><span class="person-name">${item.name}</span><span class="person-team">${item.team}</span></span></div></td>
+            <td><span class="issue-label issue-${item.type}">${item.issue}</span></td>
+            <td>${item.time}</td><td>${item.location}</td>
+            <td><button class="row-action" type="button" data-review="${item.id}" aria-label="Review ${item.issue.toLowerCase()} for ${item.name}">Review</button></td>
+          </tr>`).join("");
+        emptyState.hidden = visible.length > 0;
+      }
+
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("visible");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("visible"), 3000);
+      }
+
+      function openReview(issue) {
+        selectedIssue = issue;
+        document.getElementById("reviewSummary").innerHTML = `
+          <div class="person"><span class="person-avatar" style="background:${issue.color};color:${issue.text}">${issue.initials}</span><span><span class="person-name">${issue.name}</span><span class="person-team">${issue.team}</span></span></div>
+          <div class="summary-line"><span>Flagged issue</span><strong>${issue.issue}</strong></div>
+          <div class="summary-line"><span>Scan time / location</span><strong>${issue.time} · ${issue.location}</strong></div>
+          <div class="summary-line"><span>What we noticed</span><strong>${issue.detail}</strong></div>`;
+        reasonInput.value = "";
+        dialog.showModal();
+        reasonInput.focus();
+      }
+
+      function resolveIssue(decision, reason) {
+        if (!selectedIssue) return;
+        resolved.unshift({ ...selectedIssue, decision, reason, time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
+        const name = selectedIssue.name;
+        issues.splice(issues.findIndex((issue) => issue.id === selectedIssue.id), 1);
+        selectedIssue = null;
+        dialog.close();
+        renderRows();
+        document.getElementById("issueCount").textContent = `${issues.length} open`;
+        document.getElementById("issueMetric").textContent = issues.length;
+        document.getElementById("readyMetric").textContent = 128 - issues.length;
+        renderHistory();
+        showToast(`${name}'s issue ${decision === "approved" ? "approved" : "dismissed"}. Reason added to history.`);
+      }
+
+      function renderHistory() {
+        if (!resolved.length) return;
+        const recent = resolved.slice(0, 3).map((item) => `
+          <div class="history-item"><div class="history-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></div><div class="history-copy"><strong>${item.name}</strong> · ${item.decision === "approved" ? "correction approved" : "issue dismissed"}<div class="history-time">Today, ${item.time} · Alex M. · “${escapeHtml(item.reason)}”</div></div></div>`).join("");
+        document.getElementById("historyList").innerHTML = recent;
+      }
+
+      document.getElementById("today").querySelector("span").textContent = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+      document.querySelector(".eyebrow").innerHTML = `${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} <span aria-hidden="true">·</span> Daily overview`;
+      renderRows();
+
+      document.querySelectorAll(".filter-button").forEach((button) => button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        document.querySelectorAll(".filter-button").forEach((filter) => filter.setAttribute("aria-pressed", String(filter === button)));
+        renderRows();
+      }));
+      document.getElementById("searchInput").addEventListener("input", (event) => {
+        searchTerm = event.target.value.trim().toLowerCase();
+        renderRows();
+      });
+      rowHost.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-review]");
+        if (button) openReview(issues.find((issue) => issue.id === Number(button.dataset.review)));
+      });
+      document.getElementById("closeDialog").addEventListener("click", () => dialog.close());
+      document.getElementById("dismissButton").addEventListener("click", () => {
+        if (!reasonInput.reportValidity()) return;
+        resolveIssue("dismissed", reasonInput.value.trim());
+      });
+      document.getElementById("reviewForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!reasonInput.reportValidity()) return;
+        resolveIssue("approved", reasonInput.value.trim());
+      });
+      document.getElementById("viewHistory").addEventListener("click", () => {
+        document.getElementById("historyPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+        showToast(resolved.length ? `${resolved.length} changes recorded in this session.` : "Recent approved changes are shown here.");
+      });
+      document.getElementById("historyButton").addEventListener("click", () => {
+        document.getElementById("historyPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+        showToast(resolved.length ? `${resolved.length} changes recorded in this session.` : "Recent approved changes are shown here.");
+      });
+      document.getElementById("exportButton").addEventListener("click", () => {
+        const header = ["Employee", "Team", "Issue", "Time", "Location", "Status", "Resolution reason"];
+        const rows = [
+          ...issues.map((item) => [item.name, item.team, item.issue, item.time, item.location, "Unresolved", ""]),
+          ...resolved.map((item) => [item.name, item.team, item.issue, item.time, item.location, item.decision, item.reason])
+        ];
+        const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\r\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        link.download = `trucheck-attendance-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast("Attendance report exported with unresolved issues clearly marked.");
+      });
+    })();
+  </script>
+</body>
+</html>
